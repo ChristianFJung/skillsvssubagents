@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skills vs Subagents | Claude Code</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Skills vs Subagents</h1>
+        <p class="subtitle">Two superpowers. One Claude. Know when to use each.</p>
+    </header>
+
+    <main>
+        <!-- Scenario Selector -->
+        <section class="scenario-selector">
+            <h2>Pick a task. Watch them race.</h2>
+            <div class="scenario-buttons">
+                <button class="scenario-btn active" data-scenario="review">Review this PR</button>
+                <button class="scenario-btn" data-scenario="explore">Explore the codebase</button>
+                <button class="scenario-btn" data-scenario="standards">Follow coding standards</button>
+                <button class="scenario-btn" data-scenario="commit">Create a commit</button>
+                <button class="scenario-btn" data-scenario="refactor">Refactor auth system</button>
+                <button class="scenario-btn" data-scenario="debug">Debug this error</button>
+                <button class="scenario-btn" data-scenario="docs">Generate API docs</button>
+            </div>
+            <div class="animation-controls">
+                <button id="playBtn" class="control-btn">Play</button>
+                <button id="resetBtn" class="control-btn">Reset</button>
+            </div>
+        </section>
+
+        <!-- Split Screen Visualization -->
+        <section class="split-screen">
+            <!-- Skills Panel -->
+            <div class="panel skills-panel" id="skillsPanel">
+                <div class="recommendation-badge" id="skillsBadge">
+                    <span class="badge-icon">★</span>
+                    <span class="badge-text">Recommended for this task</span>
+                </div>
+                <h3>Skills Approach</h3>
+                <div class="animation-container" id="skillsAnimation">
+                    <div class="context-bubble main-context">
+                        <div class="context-label">Your Conversation Context</div>
+
+                        <div class="flow-item user-node" id="skillUser">
+                            <div class="node-icon">U</div>
+                            <div class="node-label">User</div>
+                            <div class="message-bubble" id="skillUserMsg"></div>
+                        </div>
+
+                        <div class="flow-arrow" id="skillArrow1"></div>
+
+                        <div class="flow-item claude-node" id="skillClaude">
+                            <div class="node-icon">C</div>
+                            <div class="node-label">Claude</div>
+                            <div class="action-label" id="skillClaudeAction">Loads skill inline</div>
+                        </div>
+
+                        <div class="flow-arrow" id="skillArrow2"></div>
+
+                        <div class="skill-inject" id="skillInject">
+                            <div class="inject-label">Skill instructions blend into context</div>
+                            <div class="inject-content" id="skillInjectContent"></div>
+                        </div>
+
+                        <div class="flow-arrow" id="skillArrow3"></div>
+
+                        <div class="response-node" id="skillResponse">
+                            <div class="response-label">Response (still in same context)</div>
+                            <div class="response-content" id="skillResponseContent"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-info">
+                    <span class="info-badge inline">Inline Execution</span>
+                    <span class="info-badge shared">Shared Context</span>
+                </div>
+            </div>
+
+            <!-- Subagents Panel -->
+            <div class="panel subagents-panel" id="subagentsPanel">
+                <div class="recommendation-badge" id="subagentsBadge">
+                    <span class="badge-icon">★</span>
+                    <span class="badge-text">Recommended for this task</span>
+                </div>
+                <h3>Subagents Approach</h3>
+                <div class="animation-container" id="subagentsAnimation">
+                    <div class="context-bubble main-context" id="subagentMainContext">
+                        <div class="context-label">Your Conversation Context</div>
+
+                        <div class="flow-item user-node" id="subagentUser">
+                            <div class="node-icon">U</div>
+                            <div class="node-label">User</div>
+                            <div class="message-bubble" id="subagentUserMsg"></div>
+                        </div>
+
+                        <div class="flow-arrow" id="subagentArrow1"></div>
+
+                        <div class="flow-item claude-node" id="subagentClaude">
+                            <div class="node-icon">C</div>
+                            <div class="node-label">Claude</div>
+                            <div class="action-label" id="subagentClaudeAction">Spawns agent</div>
+                        </div>
+                    </div>
+
+                    <div class="spawn-arrow" id="spawnArrow"></div>
+
+                    <div class="context-bubble agent-context" id="agentContext">
+                        <div class="context-label">Separate Agent Context</div>
+                        <div class="agent-work" id="agentWork">
+                            <div class="work-item" id="work1">Reading files...</div>
+                            <div class="work-item" id="work2">Using Haiku model</div>
+                            <div class="work-item" id="work3">Restricted tools only</div>
+                        </div>
+                    </div>
+
+                    <div class="return-arrow" id="returnArrow"></div>
+
+                    <div class="summary-return" id="summaryReturn">
+                        <div class="summary-label">Summary returns to main context</div>
+                        <div class="summary-content" id="summaryContent"></div>
+                    </div>
+                </div>
+                <div class="panel-info">
+                    <span class="info-badge isolated">Isolated Execution</span>
+                    <span class="info-badge separate">Separate Context</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Why This Approach Section -->
+        <section class="why-section" id="whySection">
+            <div class="why-card" id="whyCard">
+                <h4 id="whyTitle">Why Skills for this task?</h4>
+                <p id="whyExplanation">Loading...</p>
+                <div class="why-factors" id="whyFactors"></div>
+            </div>
+        </section>
+
+        <!-- Comparison Cards -->
+        <section class="comparison-section">
+            <h2>The Trade-offs (hover to reveal)</h2>
+            <div class="cards-container">
+                <!-- Skills Cards -->
+                <div class="card-column">
+                    <h4>Skills Superpowers</h4>
+                    <div class="flip-card" data-type="strength">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front">
+                                <span class="card-icon">+</span>
+                                <span>Remembers Everything</span>
+                            </div>
+                            <div class="flip-card-back">
+                                "Remember when we discussed the auth bug? Fix that in the PR review." Skills can do this. Subagents can't.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flip-card" data-type="strength">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front">
+                                <span class="card-icon">+</span>
+                                <span>Instant Activation</span>
+                            </div>
+                            <div class="flip-card-back">
+                                Type /commit and boom—skill loaded, action taken. No waiting for a subprocess to spin up.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flip-card" data-type="strength">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front">
+                                <span class="card-icon">+</span>
+                                <span>User Commands</span>
+                            </div>
+                            <div class="flip-card-back">
+                                Your team can type /review, /commit, /test—like Slack commands but for coding. Subagents are Claude-initiated only.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flip-card" data-type="tradeoff">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front">
+                                <span class="card-icon">~</span>
+                                <span>Context Tax</span>
+                            </div>
+                            <div class="flip-card-back">
+                                Every skill instruction lives in your context. A 500-line style guide means 500 lines less for actual code.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subagents Cards -->
+                <div class="card-column">
+                    <h4>Subagent Superpowers</h4>
+                    <div class="flip-card" data-type="strength">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front">
+                                <span class="card-icon">+</span>
+                                <span>Messy Work Stays Hidden</span>
+                            </div>
+                            <div class="flip-card-back">
+                                Read 100 files to find one answer? The subagent handles the mess. You just see the clean result.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flip-card" data-type="strength">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front">
+                                <span class="card-icon">+</span>
+                                <span>Budget-Friendly</span>
+                            </div>
+                            <div class="flip-card-back">
+                                The Explore subagent uses Haiku by default (cheap & fast). Why pay Opus prices to grep through 50 config files?
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flip-card" data-type="strength">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front">
+                                <span class="card-icon">+</span>
+                                <span>Parallel Power</span>
+                            </div>
+                            <div class="flip-card-back">
+                                "Explore auth AND database AND API"—three subagents work simultaneously. Skills do one thing at a time.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flip-card" data-type="tradeoff">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front">
+                                <span class="card-icon">~</span>
+                                <span>Lossy Compression</span>
+                            </div>
+                            <div class="flip-card-back">
+                                You only get a summary back. If the subagent missed something, you won't know. It's a one-way trip.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Decision Wizard -->
+        <section class="wizard-section">
+            <h2>Still not sure? Let's figure it out.</h2>
+            <div class="wizard-container" id="wizard">
+                <div class="wizard-question" id="wizardQuestion">
+                    <p id="questionText">What kind of task are you trying to accomplish?</p>
+                    <div class="wizard-options" id="wizardOptions">
+                        <!-- Options populated by JS -->
+                    </div>
+                </div>
+                <div class="wizard-result" id="wizardResult" style="display: none;">
+                    <div class="result-recommendation" id="resultRecommendation"></div>
+                    <div class="result-explanation" id="resultExplanation"></div>
+                    <button class="control-btn" id="restartWizard">Start Over</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Reference -->
+        <section class="reference-section">
+            <h2>The Cheat Sheet</h2>
+            <div class="reference-grid">
+                <div class="reference-card skills-ref">
+                    <h4>Skills = Your Pair Programmer</h4>
+                    <p class="ref-analogy">Like a colleague who sits with you all day, remembers your conversations, and speaks your team's language.</p>
+                    <ul>
+                        <li>User types /command → magic happens</li>
+                        <li>Remembers your whole conversation</li>
+                        <li>Great for: reviews, commits, debugging</li>
+                        <li>Trade-off: uses your context window</li>
+                    </ul>
+                </div>
+                <div class="reference-card subagents-ref">
+                    <h4>Subagents = Your Research Team</h4>
+                    <p class="ref-analogy">Like sending an intern to the library. They do the legwork and return with a summary.</p>
+                    <ul>
+                        <li>Spawns a separate worker (isolated context)</li>
+                        <li>Explore agent uses Haiku (fast & cheap)</li>
+                        <li>Great for: exploration, docs, planning</li>
+                        <li>Trade-off: only returns a summary</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pro Tip -->
+        <section class="protip-section">
+            <div class="protip-card">
+                <h4>Pro tip: They can work together</h4>
+                <p>Skills can run <em>inside</em> a subagent using <code>context: fork</code>. This gives you the best of both: a /command users can invoke, but execution happens in isolated context. Perfect for user-triggered tasks that involve heavy exploration.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Built to help you ship faster with Claude Code</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
