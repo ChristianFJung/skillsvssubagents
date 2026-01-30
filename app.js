@@ -512,43 +512,65 @@ async function loadConversation() {
 
 function renderConversation(messages) {
     const fragment = document.createDocumentFragment();
-    let lastType = null;
+
+    // Group consecutive messages by type and merge tool calls
+    const groups = [];
+    let currentGroup = null;
 
     for (const entry of messages) {
         const content = parseMessageContent(entry.message);
         if (!content.text && !content.toolUses.length) continue;
 
-        const messageEl = document.createElement('div');
-        messageEl.className = `message ${entry.type}`;
-
-        // Add timestamp indicator for context
-        const isNewSpeaker = lastType !== entry.type;
-        lastType = entry.type;
-
-        let html = '';
-
-        if (isNewSpeaker) {
-            html += `
-                <div class="message-header">
-                    <span class="message-role">${entry.type === 'user' ? 'You' : 'Claude'}</span>
-                </div>
-            `;
+        if (!currentGroup || currentGroup.type !== entry.type) {
+            currentGroup = {
+                type: entry.type,
+                texts: [],
+                tools: []
+            };
+            groups.push(currentGroup);
         }
 
         if (content.text) {
-            // Format the text nicely - convert newlines, code blocks, etc.
-            html += `<div class="message-content">${formatText(content.text)}</div>`;
+            currentGroup.texts.push(content.text);
+        }
+        currentGroup.tools.push(...content.toolUses);
+    }
+
+    // Render groups
+    for (const group of groups) {
+        const messageEl = document.createElement('div');
+        messageEl.className = `message ${group.type}`;
+
+        let html = `
+            <div class="message-header">
+                <span class="message-role">${group.type === 'user' ? 'You' : 'Claude'}</span>
+            </div>
+        `;
+
+        // Combine text content
+        const combinedText = group.texts.join('\n\n');
+        if (combinedText) {
+            html += `<div class="message-content">${formatText(combinedText)}</div>`;
         }
 
-        for (const tool of content.toolUses) {
+        // Show tools in collapsible section if there are any
+        if (group.tools.length > 0) {
             html += `
-                <div class="tool-use">
-                    <div class="tool-header">
-                        <span class="tool-icon">${getToolIcon(tool.name)}</span>
-                        <span class="tool-name">${tool.name}</span>
+                <details class="tools-section">
+                    <summary class="tools-summary">
+                        <span class="tools-count">${group.tools.length} tool${group.tools.length > 1 ? 's' : ''} used</span>
+                        <span class="tools-expand">▶</span>
+                    </summary>
+                    <div class="tools-list">
+                        ${group.tools.map(tool => `
+                            <div class="tool-use">
+                                <span class="tool-icon">${getToolIcon(tool.name)}</span>
+                                <span class="tool-name">${tool.name}</span>
+                                ${tool.preview ? `<span class="tool-preview">${escapeHtml(tool.preview)}</span>` : ''}
+                            </div>
+                        `).join('')}
                     </div>
-                    ${tool.preview ? `<div class="tool-preview">${escapeHtml(tool.preview)}</div>` : ''}
-                </div>
+                </details>
             `;
         }
 

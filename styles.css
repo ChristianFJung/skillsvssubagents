@@ -244,41 +244,87 @@ header {
     border-left: 3px solid var(--claude-purple);
 }
 
-.tool-use {
-    background: var(--bg-panel);
-    border-radius: 6px;
-    padding: 0.6rem 1rem;
-    margin-top: 0.5rem;
+/* Collapsible Tools Section */
+.tools-section {
+    margin-top: 0.75rem;
     border: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    border-radius: 6px;
+    background: var(--bg-panel);
 }
 
-.tool-header {
+.tools-summary {
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.tools-summary:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.tools-summary::-webkit-details-marker {
+    display: none;
+}
+
+.tools-count {
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
+.tools-expand {
+    font-size: 0.7rem;
+    transition: transform 0.2s ease;
+}
+
+.tools-section[open] .tools-expand {
+    transform: rotate(90deg);
+}
+
+.tools-list {
+    border-top: 1px solid var(--border-color);
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.tool-use {
+    background: var(--bg-dark);
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+}
+
 .tool-icon {
-    font-size: 1rem;
+    font-size: 0.9rem;
+    flex-shrink: 0;
 }
 
 .tool-name {
     color: var(--agent-teal);
     font-weight: 600;
-    font-size: 0.85rem;
+    flex-shrink: 0;
 }
 
 .tool-preview {
     color: var(--text-secondary);
     font-family: 'SF Mono', Monaco, Consolas, monospace;
-    font-size: 0.8rem;
-    padding-left: 1.5rem;
+    font-size: 0.75rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    opacity: 0.8;
 }
 
 header h1 {
