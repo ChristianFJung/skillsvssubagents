@@ -10,7 +10,22 @@
     <header>
         <h1>Skills vs Subagents</h1>
         <p class="subtitle">Two superpowers. One Claude. Know when to use each.</p>
+        <button class="how-made-btn" id="howMadeBtn">How was this made?</button>
     </header>
+
+    <!-- Conversation Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>How this site was made</h2>
+                <p class="modal-subtitle">This entire site was built in one Claude Code conversation. Here's the full transcript.</p>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="conversation-container" id="conversationContainer">
+                <div class="loading">Loading conversation...</div>
+            </div>
+        </div>
+    </div>
 
     <main>
         <!-- Scenario Selector -->

@@ -438,3 +438,128 @@ function renderWizardStep(stepId) {
 
 // Start the app
 init();
+
+// =====================
+// Conversation Modal
+// =====================
+
+const howMadeBtn = document.getElementById('howMadeBtn');
+const modalOverlay = document.getElementById('modalOverlay');
+const modalClose = document.getElementById('modalClose');
+const conversationContainer = document.getElementById('conversationContainer');
+
+let conversationLoaded = false;
+
+howMadeBtn.addEventListener('click', () => {
+    modalOverlay.classList.add('visible');
+    if (!conversationLoaded) {
+        loadConversation();
+    }
+});
+
+modalClose.addEventListener('click', () => {
+    modalOverlay.classList.remove('visible');
+});
+
+modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) {
+        modalOverlay.classList.remove('visible');
+    }
+});
+
+async function loadConversation() {
+    try {
+        const response = await fetch('conversation.jsonl');
+        const text = await response.text();
+        const lines = text.trim().split('\n');
+
+        const messages = [];
+
+        for (const line of lines) {
+            try {
+                const entry = JSON.parse(line);
+                if (entry.type === 'user' || entry.type === 'assistant') {
+                    messages.push(entry);
+                }
+            } catch (e) {
+                // Skip malformed lines
+            }
+        }
+
+        renderConversation(messages);
+        conversationLoaded = true;
+    } catch (error) {
+        conversationContainer.innerHTML = `<div class="loading">Failed to load conversation: ${error.message}</div>`;
+    }
+}
+
+function renderConversation(messages) {
+    conversationContainer.innerHTML = '';
+
+    for (const entry of messages) {
+        const messageEl = document.createElement('div');
+        messageEl.className = `message ${entry.type}`;
+
+        const content = parseMessageContent(entry.message);
+        if (!content.text && !content.toolUse) continue;
+
+        let html = `
+            <div class="message-header">
+                <span class="message-role">${entry.type === 'user' ? 'You' : 'Claude'}</span>
+            </div>
+        `;
+
+        if (content.text) {
+            html += `<div class="message-content">${escapeHtml(content.text)}</div>`;
+        }
+
+        if (content.toolUse) {
+            html += `
+                <div class="tool-use">
+                    <span class="tool-name">${content.toolUse.name}</span>
+                    ${content.toolUse.input ? `<div class="tool-input">${escapeHtml(truncate(content.toolUse.input, 500))}</div>` : ''}
+                </div>
+            `;
+        }
+
+        messageEl.innerHTML = html;
+        conversationContainer.appendChild(messageEl);
+    }
+}
+
+function parseMessageContent(message) {
+    const result = { text: '', toolUse: null };
+
+    if (typeof message === 'string') {
+        result.text = message;
+        return result;
+    }
+
+    if (Array.isArray(message)) {
+        for (const block of message) {
+            if (block.type === 'text') {
+                result.text += block.text;
+            } else if (block.type === 'tool_use') {
+                result.toolUse = {
+                    name: block.name,
+                    input: typeof block.input === 'object'
+                        ? JSON.stringify(block.input, null, 2)
+                        : block.input
+                };
+            }
+        }
+    }
+
+    return result;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function truncate(str, maxLen) {
+    if (str.length <= maxLen) return str;
+    return str.slice(0, maxLen) + '...';
+}
