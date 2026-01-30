@@ -577,8 +577,14 @@ function parseMessageContent(message) {
         return result;
     }
 
-    if (Array.isArray(message)) {
-        for (const block of message) {
+    // Handle {content: [...], role: ...} format
+    let content = message;
+    if (message && message.content) {
+        content = message.content;
+    }
+
+    if (Array.isArray(content)) {
+        for (const block of content) {
             if (block.type === 'text') {
                 result.text += block.text;
             } else if (block.type === 'tool_use') {
@@ -588,6 +594,8 @@ function parseMessageContent(message) {
                         ? JSON.stringify(block.input, null, 2)
                         : block.input
                 };
+            } else if (block.type === 'tool_result') {
+                // Skip tool results for cleaner display
             }
         }
     }
