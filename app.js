@@ -451,44 +451,40 @@ const conversationContainer = document.getElementById('conversationContainer');
 let conversationLoaded = false;
 
 howMadeBtn.addEventListener('click', () => {
-    console.log('Modal opened');
     modalOverlay.classList.add('visible');
+    document.body.style.overflow = 'hidden';
     if (!conversationLoaded) {
-        console.log('Loading conversation...');
         loadConversation();
     }
 });
 
-modalClose.addEventListener('click', () => {
-    modalOverlay.classList.remove('visible');
+modalClose.addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) closeModal();
+});
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modalOverlay.classList.contains('visible')) closeModal();
 });
 
-modalOverlay.addEventListener('click', (e) => {
-    if (e.target === modalOverlay) {
-        modalOverlay.classList.remove('visible');
-    }
-});
+function closeModal() {
+    modalOverlay.classList.remove('visible');
+    document.body.style.overflow = '';
+}
 
 async function loadConversation() {
-    console.log('loadConversation called');
-    conversationContainer.innerHTML = '<div class="loading">Loading conversation (2.4MB)... this may take a moment</div>';
+    conversationContainer.innerHTML = `
+        <div class="loading">
+            <div class="loading-spinner"></div>
+            <p>Loading conversation...</p>
+        </div>
+    `;
 
     try {
-        console.log('Fetching...');
         const response = await fetch('conversation.jsonl');
-        console.log('Fetch response:', response.status);
+        if (!response.ok) throw new Error(`Failed to load`);
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        console.log('Reading text...');
         const text = await response.text();
-        console.log('Text length:', text.length);
-
         const lines = text.trim().split('\n');
-        console.log('Lines:', lines.length);
-
         const messages = [];
 
         for (const line of lines) {
@@ -497,87 +493,81 @@ async function loadConversation() {
                 if (entry.type === 'user' || entry.type === 'assistant') {
                     messages.push(entry);
                 }
-            } catch (e) {
-                // Skip malformed lines
-            }
+            } catch (e) {}
         }
 
-        console.log('Messages found:', messages.length);
-
-        if (messages.length === 0) {
-            throw new Error('No messages found in conversation');
-        }
+        if (messages.length === 0) throw new Error('No messages found');
 
         renderConversation(messages);
         conversationLoaded = true;
-        console.log('Done rendering');
     } catch (error) {
-        conversationContainer.innerHTML = `<div class="loading">Failed to load: ${error.message}</div>`;
-        console.error('Conversation load error:', error);
+        conversationContainer.innerHTML = `
+            <div class="loading error">
+                <p>Could not load conversation</p>
+                <p class="error-detail">${error.message}</p>
+            </div>
+        `;
     }
 }
 
 function renderConversation(messages) {
-    conversationContainer.innerHTML = '';
-    let rendered = 0;
-    let skipped = 0;
-
-    // Debug first 3 messages
-    console.log('First 3 messages:', messages.slice(0, 3).map(m => ({
-        type: m.type,
-        message: typeof m.message,
-        messagePreview: JSON.stringify(m.message).slice(0, 200)
-    })));
+    const fragment = document.createDocumentFragment();
+    let lastType = null;
 
     for (const entry of messages) {
         const content = parseMessageContent(entry.message);
-        if (!content.text && !content.toolUse) {
-            skipped++;
-            continue;
-        }
+        if (!content.text && !content.toolUses.length) continue;
 
         const messageEl = document.createElement('div');
         messageEl.className = `message ${entry.type}`;
 
-        let html = `
-            <div class="message-header">
-                <span class="message-role">${entry.type === 'user' ? 'You' : 'Claude'}</span>
-            </div>
-        `;
+        // Add timestamp indicator for context
+        const isNewSpeaker = lastType !== entry.type;
+        lastType = entry.type;
 
-        if (content.text) {
-            html += `<div class="message-content">${escapeHtml(content.text)}</div>`;
+        let html = '';
+
+        if (isNewSpeaker) {
+            html += `
+                <div class="message-header">
+                    <span class="message-role">${entry.type === 'user' ? 'You' : 'Claude'}</span>
+                </div>
+            `;
         }
 
-        if (content.toolUse) {
+        if (content.text) {
+            // Format the text nicely - convert newlines, code blocks, etc.
+            html += `<div class="message-content">${formatText(content.text)}</div>`;
+        }
+
+        for (const tool of content.toolUses) {
             html += `
                 <div class="tool-use">
-                    <span class="tool-name">${content.toolUse.name}</span>
-                    ${content.toolUse.input ? `<div class="tool-input">${escapeHtml(truncate(content.toolUse.input, 500))}</div>` : ''}
+                    <div class="tool-header">
+                        <span class="tool-icon">${getToolIcon(tool.name)}</span>
+                        <span class="tool-name">${tool.name}</span>
+                    </div>
+                    ${tool.preview ? `<div class="tool-preview">${escapeHtml(tool.preview)}</div>` : ''}
                 </div>
             `;
         }
 
         messageEl.innerHTML = html;
-        conversationContainer.appendChild(messageEl);
-        rendered++;
+        fragment.appendChild(messageEl);
     }
 
-    console.log('Rendered messages:', rendered);
-    console.log('Skipped messages:', skipped);
-    console.log('Container children:', conversationContainer.children.length);
-    console.log('Container HTML length:', conversationContainer.innerHTML.length);
+    conversationContainer.innerHTML = '';
+    conversationContainer.appendChild(fragment);
 }
 
 function parseMessageContent(message) {
-    const result = { text: '', toolUse: null };
+    const result = { text: '', toolUses: [] };
 
     if (typeof message === 'string') {
         result.text = message;
         return result;
     }
 
-    // Handle {content: [...], role: ...} format
     let content = message;
     if (message && message.content) {
         content = message.content;
@@ -585,22 +575,78 @@ function parseMessageContent(message) {
 
     if (Array.isArray(content)) {
         for (const block of content) {
-            if (block.type === 'text') {
+            if (block.type === 'text' && block.text) {
                 result.text += block.text;
             } else if (block.type === 'tool_use') {
-                result.toolUse = {
+                const preview = getToolPreview(block.name, block.input);
+                result.toolUses.push({
                     name: block.name,
-                    input: typeof block.input === 'object'
-                        ? JSON.stringify(block.input, null, 2)
-                        : block.input
-                };
-            } else if (block.type === 'tool_result') {
-                // Skip tool results for cleaner display
+                    preview: preview
+                });
             }
         }
     }
 
     return result;
+}
+
+function getToolIcon(name) {
+    const icons = {
+        'Write': '📝',
+        'Edit': '✏️',
+        'Read': '📖',
+        'Bash': '💻',
+        'Glob': '🔍',
+        'Grep': '🔎',
+        'WebFetch': '🌐',
+        'WebSearch': '🔍',
+        'Task': '📋'
+    };
+    return icons[name] || '🔧';
+}
+
+function getToolPreview(name, input) {
+    if (!input) return '';
+
+    if (name === 'Write' && input.file_path) {
+        return `Creating ${input.file_path.split('/').pop()}`;
+    }
+    if (name === 'Edit' && input.file_path) {
+        return `Editing ${input.file_path.split('/').pop()}`;
+    }
+    if (name === 'Read' && input.file_path) {
+        return `Reading ${input.file_path.split('/').pop()}`;
+    }
+    if (name === 'Bash' && input.command) {
+        return truncate(input.command, 60);
+    }
+    if (name === 'Grep' && input.pattern) {
+        return `Searching for "${truncate(input.pattern, 40)}"`;
+    }
+    if (name === 'WebFetch' && input.url) {
+        return truncate(input.url, 50);
+    }
+    if (name === 'WebSearch' && input.query) {
+        return `"${truncate(input.query, 50)}"`;
+    }
+
+    return '';
+}
+
+function formatText(text) {
+    // Escape HTML first
+    let formatted = escapeHtml(text);
+
+    // Convert markdown-style code blocks to styled spans
+    formatted = formatted.replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre class="code-block">$2</pre>');
+
+    // Convert inline code
+    formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Convert newlines to breaks
+    formatted = formatted.replace(/\n/g, '<br>');
+
+    return formatted;
 }
 
 function escapeHtml(text) {
@@ -610,6 +656,7 @@ function escapeHtml(text) {
 }
 
 function truncate(str, maxLen) {
+    if (!str) return '';
     if (str.length <= maxLen) return str;
     return str.slice(0, maxLen) + '...';
 }
