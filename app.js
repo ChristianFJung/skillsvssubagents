@@ -468,8 +468,15 @@ modalOverlay.addEventListener('click', (e) => {
 });
 
 async function loadConversation() {
+    conversationContainer.innerHTML = '<div class="loading">Loading conversation (1.5MB)...</div>';
+
     try {
         const response = await fetch('conversation.jsonl');
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
         const text = await response.text();
         const lines = text.trim().split('\n');
 
@@ -486,10 +493,15 @@ async function loadConversation() {
             }
         }
 
+        if (messages.length === 0) {
+            throw new Error('No messages found in conversation');
+        }
+
         renderConversation(messages);
         conversationLoaded = true;
     } catch (error) {
         conversationContainer.innerHTML = `<div class="loading">Failed to load conversation: ${error.message}</div>`;
+        console.error('Conversation load error:', error);
     }
 }
 
