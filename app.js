@@ -564,6 +564,12 @@ function parseMessageContent(message) {
     const result = { text: '', toolUses: [] };
 
     if (typeof message === 'string') {
+        // Filter out system/interrupt messages
+        if (message.includes('[Request interrupted') ||
+            message.includes('tool_result') ||
+            message.startsWith('[')) {
+            return result;
+        }
         result.text = message;
         return result;
     }
@@ -576,6 +582,8 @@ function parseMessageContent(message) {
     if (Array.isArray(content)) {
         for (const block of content) {
             if (block.type === 'text' && block.text) {
+                // Filter out interrupt messages
+                if (block.text.includes('[Request interrupted')) continue;
                 result.text += block.text;
             } else if (block.type === 'tool_use') {
                 const preview = getToolPreview(block.name, block.input);
@@ -608,27 +616,36 @@ function getToolIcon(name) {
 function getToolPreview(name, input) {
     if (!input) return '';
 
-    if (name === 'Write' && input.file_path) {
-        return `Creating ${input.file_path.split('/').pop()}`;
-    }
-    if (name === 'Edit' && input.file_path) {
-        return `Editing ${input.file_path.split('/').pop()}`;
-    }
-    if (name === 'Read' && input.file_path) {
-        return `Reading ${input.file_path.split('/').pop()}`;
-    }
-    if (name === 'Bash' && input.command) {
-        return truncate(input.command, 60);
-    }
-    if (name === 'Grep' && input.pattern) {
-        return `Searching for "${truncate(input.pattern, 40)}"`;
-    }
-    if (name === 'WebFetch' && input.url) {
-        return truncate(input.url, 50);
-    }
-    if (name === 'WebSearch' && input.query) {
-        return `"${truncate(input.query, 50)}"`;
-    }
+    try {
+        if (name === 'Write' && input.file_path) {
+            return input.file_path.split('/').pop();
+        }
+        if (name === 'Edit' && input.file_path) {
+            return input.file_path.split('/').pop();
+        }
+        if (name === 'Read' && input.file_path) {
+            return input.file_path.split('/').pop();
+        }
+        if (name === 'Bash' && input.command) {
+            return truncate(input.command, 50);
+        }
+        if (name === 'Grep' && input.pattern) {
+            return `"${truncate(input.pattern, 30)}"`;
+        }
+        if (name === 'Glob' && input.pattern) {
+            return input.pattern;
+        }
+        if (name === 'WebFetch' && input.url) {
+            try {
+                return new URL(input.url).hostname;
+            } catch {
+                return truncate(input.url, 40);
+            }
+        }
+        if (name === 'WebSearch' && input.query) {
+            return `"${truncate(input.query, 40)}"`;
+        }
+    } catch (e) {}
 
     return '';
 }
