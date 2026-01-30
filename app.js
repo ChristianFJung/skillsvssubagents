@@ -519,13 +519,14 @@ async function loadConversation() {
 
 function renderConversation(messages) {
     conversationContainer.innerHTML = '';
+    let rendered = 0;
 
     for (const entry of messages) {
-        const messageEl = document.createElement('div');
-        messageEl.className = `message ${entry.type}`;
-
         const content = parseMessageContent(entry.message);
         if (!content.text && !content.toolUse) continue;
+
+        const messageEl = document.createElement('div');
+        messageEl.className = `message ${entry.type}`;
 
         let html = `
             <div class="message-header">
@@ -548,7 +549,12 @@ function renderConversation(messages) {
 
         messageEl.innerHTML = html;
         conversationContainer.appendChild(messageEl);
+        rendered++;
     }
+
+    console.log('Rendered messages:', rendered);
+    console.log('Container children:', conversationContainer.children.length);
+    console.log('Container HTML length:', conversationContainer.innerHTML.length);
 }
 
 function parseMessageContent(message) {
