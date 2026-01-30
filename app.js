@@ -520,10 +520,21 @@ async function loadConversation() {
 function renderConversation(messages) {
     conversationContainer.innerHTML = '';
     let rendered = 0;
+    let skipped = 0;
+
+    // Debug first 3 messages
+    console.log('First 3 messages:', messages.slice(0, 3).map(m => ({
+        type: m.type,
+        message: typeof m.message,
+        messagePreview: JSON.stringify(m.message).slice(0, 200)
+    })));
 
     for (const entry of messages) {
         const content = parseMessageContent(entry.message);
-        if (!content.text && !content.toolUse) continue;
+        if (!content.text && !content.toolUse) {
+            skipped++;
+            continue;
+        }
 
         const messageEl = document.createElement('div');
         messageEl.className = `message ${entry.type}`;
@@ -553,6 +564,7 @@ function renderConversation(messages) {
     }
 
     console.log('Rendered messages:', rendered);
+    console.log('Skipped messages:', skipped);
     console.log('Container children:', conversationContainer.children.length);
     console.log('Container HTML length:', conversationContainer.innerHTML.length);
 }
