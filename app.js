@@ -451,8 +451,10 @@ const conversationContainer = document.getElementById('conversationContainer');
 let conversationLoaded = false;
 
 howMadeBtn.addEventListener('click', () => {
+    console.log('Modal opened');
     modalOverlay.classList.add('visible');
     if (!conversationLoaded) {
+        console.log('Loading conversation...');
         loadConversation();
     }
 });
@@ -468,17 +470,24 @@ modalOverlay.addEventListener('click', (e) => {
 });
 
 async function loadConversation() {
-    conversationContainer.innerHTML = '<div class="loading">Loading conversation (1.5MB)...</div>';
+    console.log('loadConversation called');
+    conversationContainer.innerHTML = '<div class="loading">Loading conversation (2.4MB)... this may take a moment</div>';
 
     try {
+        console.log('Fetching...');
         const response = await fetch('conversation.jsonl');
+        console.log('Fetch response:', response.status);
 
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
+        console.log('Reading text...');
         const text = await response.text();
+        console.log('Text length:', text.length);
+
         const lines = text.trim().split('\n');
+        console.log('Lines:', lines.length);
 
         const messages = [];
 
@@ -493,14 +502,17 @@ async function loadConversation() {
             }
         }
 
+        console.log('Messages found:', messages.length);
+
         if (messages.length === 0) {
             throw new Error('No messages found in conversation');
         }
 
         renderConversation(messages);
         conversationLoaded = true;
+        console.log('Done rendering');
     } catch (error) {
-        conversationContainer.innerHTML = `<div class="loading">Failed to load conversation: ${error.message}</div>`;
+        conversationContainer.innerHTML = `<div class="loading">Failed to load: ${error.message}</div>`;
         console.error('Conversation load error:', error);
     }
 }
