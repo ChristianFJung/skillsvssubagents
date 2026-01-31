@@ -673,8 +673,17 @@ function getToolPreview(name, input) {
 }
 
 function formatText(text) {
+    // Filter out personal info
+    let cleaned = text
+        .replace(/Chris Jung/gi, '[Author]')
+        .replace(/chrisjung/gi, '[author]')
+        .replace(/ChristianFJung/gi, '[Author]')
+        .replace(/christianfjung/gi, '[author]')
+        .replace(/chriss-mbp\.lan/gi, '[local]')
+        .replace(/chrisjung@[^\s>]+/gi, '[email]');
+
     // Escape HTML first
-    let formatted = escapeHtml(text);
+    let formatted = escapeHtml(cleaned);
 
     // Convert markdown-style code blocks to styled spans
     formatted = formatted.replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre class="code-block">$2</pre>');

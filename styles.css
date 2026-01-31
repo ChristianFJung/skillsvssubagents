@@ -133,6 +133,70 @@ header {
     padding: 1.5rem;
 }
 
+/* Plan Section */
+.plan-section {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(20, 184, 166, 0.1) 100%);
+    border: 1px solid var(--claude-purple);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.plan-section h3 {
+    color: var(--claude-purple-light);
+    margin: 0 0 0.75rem 0;
+    font-size: 1.1rem;
+}
+
+.plan-section p {
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+}
+
+.plan-section ul {
+    margin: 0 0 1rem 0;
+    padding-left: 1.25rem;
+}
+
+.plan-section li {
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+}
+
+.plan-section li strong {
+    color: var(--text-primary);
+}
+
+.plan-tech {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-bottom: 0 !important;
+}
+
+.conversation-divider {
+    display: flex;
+    align-items: center;
+    margin: 1.5rem 0;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.conversation-divider::before,
+.conversation-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.conversation-divider span {
+    padding: 0 1rem;
+}
+
 .loading {
     text-align: center;
     color: var(--text-secondary);
